@@ -9,8 +9,8 @@ class UniversalMachine():
         self.maxint = maxint    # contents of cells are in range [-maxint, maxint]
         self.max_memory_alloc   # maximum number of address which can be allocated or freed at a time
         
-        self.program_tape = []  # read/execute
-        self.work_tape = []     # read/write/execute
+        self.program_tape = None  # read/execute
+        self.work_tape = None     # read/write/execute
         self.output_tape = []   # used used to manipulate external environment
         self.input_tape = []    # used for receiving information from external environment
 
@@ -226,12 +226,18 @@ class UniversalMachine():
         return HALT
     
     def init_program_tape(self, program_tape: list):
-        self.program_tape = [self.correct_overflow(cell_content)for cell_content in program_tape]   # capping cell content to be in range [-maxint, maxint]
-        self.Max = len(program_tape)
+        if len(program_tape) <= (self.sp+1):
+            self.program_tape = [self.correct_overflow(cell_content)for cell_content in program_tape]   # capping cell content to be in range [-maxint, maxint]
+            self.Max = len(program_tape)
+        else:
+            raise Exception("Program Tape could not be loaded! Program Tape exceeds pre-allocated memory!")
 
     def init_work_tape(self, work_tape: list):
-        self.work_tape = [self.correct_overflow(cell_content)for cell_content in work_tape]   # capping cell content to be in range [-maxint, maxint]
-        self.Min = -len(work_tape)
+        if len(work_tape) <= (self.sw+1):
+            self.work_tape = [self.correct_overflow(cell_content)for cell_content in work_tape]   # capping cell content to be in range [-maxint, maxint]
+            self.Min = -len(work_tape)
+        else:
+            raise Exception("Work Tape could not be loaded! Work Tape exceeds pre-allocated memory!")
 
     def init_input_tape(self, input_tape: list):
         self.input_tape = input_tape
