@@ -1,13 +1,11 @@
 
 
-
-
 class UniversalMachine():
     def __init__(self, sp: int, sw: int, maxint: int, max_memory_alloc: int):
         self.sp = sp
         self.sw = sw
         self.maxint = maxint    # contents of cells are in range [-maxint, maxint]
-        self.max_memory_alloc   # maximum number of address which can be allocated or freed at a time
+        self.max_memory_alloc = max_memory_alloc   # maximum number of address which can be allocated or freed at a time
         
         self.program_tape = None  # read/execute
         self.work_tape = None     # read/write/execute
@@ -54,16 +52,21 @@ class UniversalMachine():
             1
         ]
 
-    def run(self):
+    def run(self, max_steps=None):
         HALT = False
         self.instruction_pointer = 0
 
         if len(self.program_tape) == 0:
             HALT = True
 
+        step = 0
         while not HALT:
             instruction = self.program_tape[self.instruction_pointer]
             HALT = self.execute_instruction(instruction)
+            if step == max_steps:
+                print("Maximum time steps reached!")
+                HALT = True
+            step += 1
 
         print("Universal Machine halted!")
 
@@ -73,7 +76,7 @@ class UniversalMachine():
         ADDRESSES_VALID = True
         
         tape = self.program_tape + self.work_tape
-        num_args = self.instr_arg_lookup_table[self.instruction_pointer]
+        num_args = self.instr_arg_lookup_table[instruction]
 
         if num_args > 0:
             args = self.program_tape[self.instruction_pointer+1:self.instruction_pointer+1+num_args]    # args contains addresses
@@ -136,10 +139,10 @@ class UniversalMachine():
 
                 if args[1] > -1:  # we are not allowed to write onto the program tape
                     HALT = True
-                elif tape[args[0]] >= len(self.input_tape): # check if index of input tape is valid
+                elif (tape[args[0]] >= len(self.input_tape)) or (tape[args[0]] < 0): # check if index of input tape is valid
                     HALT = True
                 else:
-                    self.work_tape[args[1]] = self.input_tape[args[0]]
+                    self.work_tape[args[1]] = self.correct_overflow(self.input_tape[tape[args[0]]])
                     self.instruction_pointer += num_args+1
 
             elif instruction == 6:  
@@ -150,7 +153,7 @@ class UniversalMachine():
                 if args[1] > -1:  # we are not allowed to write onto the program tape
                     HALT = True
                 else:
-                    self.work_tape[args[1]] = self.tape[args[0]]
+                    self.work_tape[args[1]] = tape[args[0]]
                     self.instruction_pointer += num_args+1
 
             elif instruction == 7:  
@@ -158,7 +161,7 @@ class UniversalMachine():
                 # Allocate #
                 ############
 
-                if (tape[args[0]] + len(self.work_tape)) > self.sw:
+                if ((tape[args[0]] + len(self.work_tape)) > self.sw) or (tape[args[0]] > self.max_memory_alloc):
                     HALT = True
                 else:
                     self.work_tape = [0 for _ in range(tape[args[0]])] + self.work_tape
@@ -214,10 +217,11 @@ class UniversalMachine():
                 # Free #
                 ########
                 
-                if tape[args[0]] > self.max_memory_alloc:
+                if (tape[args[0]] > self.max_memory_alloc) or (tape[args[0]] > len(self.work_tape)):
                         HALT = True
                 else:
-                    self.sw -= self.tape[args[0]]
+                    self.work_tape = self.work_tape[tape[args[0]]:]
+                    self.Min = -len(self.work_tape)
                     self.instruction_pointer += num_args+1
 
             else:
@@ -260,11 +264,55 @@ class UniversalMachine():
         return value
 
 if __name__ == "__main__":
-    sp = 5              # must be positive integer
-    sw = 5              # must be positive integer
-    maxint = 10000      # according to paper
+    sp = 100                # must be positive integer
+    sw = 100                # must be positive integer
+    maxint = 10000          # according to paper
+
+    um = UniversalMachine(
+        sp=sp,
+        sw=sw,
+        maxint=maxint,
+        max_memory_alloc=5
+    )
+
+    program_tape = [
+        7,2,
+        4,0,-1,-1,
+        10,1,-1,-1,
+        0,-2,-1,6,
+        12,1,
+        6,-1,-2,
+        8,-1,
+        9,-2,
+        5,3,-1,
+        3
+    ]
+    
+    um.init_program_tape(program_tape)
+    um.init_work_tape([])
+    um.init_input_tape([maxint+1])
+    um.run(max_steps=100)
+    print(um.output_tape)
+    print(um.work_tape)
 
 # TODO:
 # Handle overflow of cells for program tape and work tape [DONE]
 # Check that instructions can only write to addresses on work tape [DONE]
 # Check that based on the address the machine either manipulates the work tape or the program tape [DONE]
+# Print why the machine has halted []
+
+# Test instruction: [DONE]
+# -----------------
+## JUMPLEQ   [DONE]
+## OUTPUT    [DONE]
+## JUMP      [DONE]
+## STOP      [DONE]
+## ADD       [DONE]
+## GET_INPUT [DONE]
+## MOVE      [DONE]
+## ALLOCATE  [DONE]
+## INCREMENT [DONE]
+## DECREMENT [DONE]
+## SUBTRACT  [DONE]
+## MULTIPLY  [DONE]
+## FREE      [DONE]
