@@ -52,21 +52,22 @@ class UniversalMachine():
             1
         ]
 
-    def run(self, max_steps=None):
+    def run(self):
         HALT = False
         self.instruction_pointer = 0
 
         if len(self.program_tape) == 0:
             HALT = True
 
-        step = 0
-        while not HALT:
+        runtime = 0
+        while (not HALT) and (runtime < self.max_time_limit) and (self.instruction_pointer < len(self.program_tape)):
             instruction = self.program_tape[self.instruction_pointer]
             HALT = self.execute_instruction(instruction)
-            if step == max_steps:
+        
+            runtime += 1
+
+        if runtime >= self.max_time_limit:
                 print("Maximum time steps reached!")
-                HALT = True
-            step += 1
 
         print("Universal Machine halted!")
 
@@ -276,30 +277,31 @@ if __name__ == "__main__":
     )
 
     program_tape = [
-        7,2,
-        4,0,-1,-1,
-        10,1,-1,-1,
-        0,-2,-1,6,
-        12,1,
-        6,-1,-2,
-        8,-1,
-        9,-2,
-        5,3,-1,
-        3
+        7,2,            # Allocate 4 cells on work tape
+        4,0,-1,-1,      # Add 7 and 0 and write result at address -1
+        10,1,-1,-1,     # Subtract 2 from 7 and write result at address -1
+        0,-2,-1,6,      # Jump to address at index 6 if value at address -2 is smaller than value at address -1
+        12,1,           # Free 2 cells on work tape
+        6,-1,-2,        # Move content from address -1 to address -2
+        8,-1,           # Increment value at address -1
+        9,-2,           # Decrement value at address -2
+        5,3,-1,         # Get value at index 0 from input tape and write it to address -1
+        3               # Halt the machine!
     ]
     
     um.init_program_tape(program_tape)
     um.init_work_tape([])
     um.init_input_tape([maxint+1])
-    um.run(max_steps=100)
+    um.run()
     print(um.output_tape)
     print(um.work_tape)
+    print(um.instruction_pointer)
 
 # TODO:
 # Handle overflow of cells for program tape and work tape [DONE]
 # Check that instructions can only write to addresses on work tape [DONE]
 # Check that based on the address the machine either manipulates the work tape or the program tape [DONE]
-# Print why the machine has halted []
+# Check if instruction pointer is within bounds of program tape [0,Max], otherwise halt program [DONE]
 
 # Test instruction: [DONE]
 # -----------------
