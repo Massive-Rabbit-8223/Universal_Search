@@ -79,6 +79,11 @@ class UniversalMachine():
         tape = self.program_tape + self.work_tape
         num_args = self.instr_arg_lookup_table[instruction]
 
+        if (len(self.program_tape)-self.instruction_pointer) < (num_args+1):
+            HALT = True
+            ADDRESSES_VALID = False
+
+
         if num_args > 0:
             args = self.program_tape[self.instruction_pointer+1:self.instruction_pointer+1+num_args]    # args contains addresses
             ## Check if addresses are in the valid range, defined by Min/Max ##
@@ -233,7 +238,7 @@ class UniversalMachine():
     def init_program_tape(self, program_tape: list):
         if len(program_tape) <= (self.sp+1):
             self.program_tape = [self.correct_overflow(cell_content)for cell_content in program_tape]   # capping cell content to be in range [-maxint, maxint]
-            self.Max = len(program_tape)
+            self.Max = len(program_tape)-1
         else:
             raise Exception("Program Tape could not be loaded! Program Tape exceeds pre-allocated memory!")
 
