@@ -98,7 +98,9 @@ if __name__ == "__main__":
     print("Output tape", uf.solution_output_tape)
 
 # ToDo
-# comment code
-# modularize better, don't want to provide instruction set when defining specific problem class
-# probably make interface for universal search base class and universal machine?
-        
+# comment code []
+# modularize better, don't want to provide instruction set when defining specific problem class []
+# probably make interface for universal search base class and universal machine? []
+# add exponential search time to shorter programs (add resource scheduler) []
+# improve program generation, check if already halted program (halted because finished->halt command/invalid command, or end of Tape?) is prefix of currently generated program []
+# make search usable from command line, specifying problem specific parameters, evaluation function, and resource scheduling []

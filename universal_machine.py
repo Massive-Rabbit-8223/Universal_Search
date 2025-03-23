@@ -323,3 +323,8 @@ if __name__ == "__main__":
 ## SUBTRACT  [DONE]
 ## MULTIPLY  [DONE]
 ## FREE      [DONE]
+
+
+# include more comments and doc-strings []
+# make machine useable from command line []
+# program should be readable from files []
