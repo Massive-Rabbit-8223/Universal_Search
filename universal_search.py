@@ -66,7 +66,7 @@ class UniversalSearch():
     def evaluate_program_output(self, um):
         """
         Needs to implemented for specific use case.
-        Solution needs to be store in 'self.solution'.
+        Solution needs to be stored in 'self.solution'.
         """
         return None
         

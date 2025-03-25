@@ -2,20 +2,28 @@
 
 class UniversalMachine():
     def __init__(self, sp: int, sw: int, maxint: int, max_memory_alloc: int):
+        """Initialize attribute values and define instruction set.
+        
+        sp -- size of program tape, must be positive integer
+        sw -- size of work tape, must be positive integer
+        maxint -- contents of cells are in range [-maxint, maxint], cell contents outside this range create an overflow
+        max_memory_malloc -- maximum number of address which can be allocated or freed at a time, must be positive integer
+        """
+        
         self.sp = sp
         self.sw = sw
-        self.maxint = maxint    # contents of cells are in range [-maxint, maxint]
-        self.max_memory_alloc = max_memory_alloc   # maximum number of address which can be allocated or freed at a time
+        self.maxint = maxint
+        self.max_memory_alloc = max_memory_alloc
         
-        self.program_tape = None  # read/execute
-        self.work_tape = None     # read/write/execute
-        self.output_tape = []   # used used to manipulate external environment
-        self.input_tape = []    # used for receiving information from external environment
+        self.program_tape = None    # read/execute
+        self.work_tape = None       # read/write/execute
+        self.output_tape = []       # used to manipulate external environment
+        self.input_tape = []        # used for receiving information from external environment
 
         self.instruction_pointer = 0
-        self.oracle_address = 0
-        self.Min = None            # smallest address (-sw <= Min <= 0)
-        self.Max = None            # topmost address of the used storage (-1 <= Max <= sp)
+        self.oracle_address = 0     # not in use and will be removed later, just ignore it!
+        self.Min = None             # smallest address (-sw <= Min <= 0)
+        self.Max = None             # topmost address of the used storage (-1 <= Max <= sp)
         self.current_runtime = 0
         self.max_time_limit = 2**24
         self.current_time_limit = self.max_time_limit
@@ -52,7 +60,8 @@ class UniversalMachine():
             1
         ]
 
-    def run(self):
+    def run(self) -> None:
+        """Run the program (reading instructions from program tape) until machine halts."""
         HALT = False
         self.instruction_pointer = 0
 
@@ -72,14 +81,18 @@ class UniversalMachine():
         print("Universal Machine halted!")
 
 
-    def execute_instruction(self, instruction:int):
+    def execute_instruction(self, instruction:int) -> bool:
+        """Execute instruction and update instruction pointer.
+        
+        instruction -- integer corresponding to index of instruction lookup table [0, len(instruction lookup table)]
+        """
         HALT = False
         ADDRESSES_VALID = True
         
-        tape = self.program_tape + self.work_tape
+        tape = self.program_tape + self.work_tape       # concatenate program tape and worktape, in order to make addressing of cells easier without the need to always check to which tape an address belongs to
         num_args = self.instr_arg_lookup_table[instruction]
 
-        if (len(self.program_tape)-self.instruction_pointer) < (num_args+1):
+        if (len(self.program_tape)-self.instruction_pointer) < (num_args+1):    # check if the required number of arguments for the current instruction can be read from the program tape
             HALT = True
             ADDRESSES_VALID = False
 
@@ -97,9 +110,10 @@ class UniversalMachine():
 
             if instruction == 0:    
                 ###########
-                # Jumpleq #
+                # Jumpleq #     Number of arguments: 3
                 ###########
 
+                # If Value in Address 1 <= Value in Address 2, Jump to Address 3
                 if tape[args[0]] <= tape[args[1]]:
                     self.instruction_pointer = args[2]
                 else:
@@ -107,31 +121,35 @@ class UniversalMachine():
 
             elif instruction == 1:  
                 #########
-                # Ouput #
+                # Ouput #     Number of arguments: 1
                 #########
 
+                # Write the contents of Address 1 to output (append to output tape)
                 self.output_tape.append(tape[args[0]])
                 self.instruction_pointer += num_args+1
 
             elif instruction == 2:  
                 ########
-                # Jump #
+                # Jump #     Number of arguments: 1
                 ########
 
+                # Jump to Address 1
                 self.instruction_pointer = args[0]
 
             elif instruction == 3:  
                 ########
-                # Stop #
+                # Stop #     Number of arguments: 0
                 ########
 
+                # Halt
                 HALT = True
 
             elif instruction == 4:  
                 #######
-                # Add #
+                # Add #     Number of arguments: 3
                 #######
 
+                # The sum of contents of Address 1 and Address 2 is written to Address 3
                 if args[2] > -1:  # we are not allowed to write onto the program tape
                     HALT = True
                 else:
@@ -140,9 +158,10 @@ class UniversalMachine():
 
             elif instruction == 5:  
                 ############
-                # GetInput #
+                # GetInput #     Number of arguments: 
                 ############
 
+                # Get the (Address 1)-th value of input and write to Address 2
                 if args[1] > -1:  # we are not allowed to write onto the program tape
                     HALT = True
                 elif (tape[args[0]] >= len(self.input_tape)) or (tape[args[0]] < 0): # check if index of input tape is valid
@@ -153,9 +172,10 @@ class UniversalMachine():
 
             elif instruction == 6:  
                 ########
-                # Move #
+                # Move #     Number of arguments: 2
                 ########
 
+                # Copy contents of Address 1 to Address 2
                 if args[1] > -1:  # we are not allowed to write onto the program tape
                     HALT = True
                 else:
@@ -164,9 +184,10 @@ class UniversalMachine():
 
             elif instruction == 7:  
                 ############
-                # Allocate #
+                # Allocate #     Number of arguments: 1
                 ############
 
+                # Allocate (Content 1) new memory addresses
                 if ((tape[args[0]] + len(self.work_tape)) > self.sw) or (tape[args[0]] > self.max_memory_alloc):
                     HALT = True
                 else:
@@ -176,9 +197,10 @@ class UniversalMachine():
 
             elif instruction == 8:  
                 #############
-                # Increment #
+                # Increment #     Number of arguments: 1
                 #############
 
+                # Increment content of Address 1 by 1: (Address 1) + 1
                 if args[0] > -1:  # we are not allowed to write onto the program tape
                     HALT = True
                 else:
@@ -187,9 +209,10 @@ class UniversalMachine():
 
             elif instruction == 9:  
                 #############
-                # Decrement #
+                # Decrement #     Number of arguments: 1
                 #############
 
+                # Decrement content of Address 1 by 1: (Address 1) - 1
                 if args[0] > -1:  # we are not allowed to write onto the program tape
                     HALT = True
                 else:
@@ -198,9 +221,10 @@ class UniversalMachine():
 
             elif instruction == 10: 
                 ############
-                # Subtract #
+                # Subtract #     Number of arguments: 3
                 ############
 
+                # The subtraction of Address 1 from Address 2 is written to Address 3
                 if args[2] > -1:  # we are not allowed to write onto the program tape
                     HALT = True
                 else:
@@ -209,9 +233,10 @@ class UniversalMachine():
 
             elif instruction == 11: 
                 ############
-                # Multiply #
+                # Multiply #     Number of arguments: 3
                 ############
 
+                # The product of contents of Address 1 and Address 2 is written to Address 3
                 if args[2] > -1:  # we are not allowed to write onto the program tape
                     HALT = True
                 else:
@@ -220,9 +245,10 @@ class UniversalMachine():
 
             elif instruction == 12: 
                 ########
-                # Free #
+                # Free #     Number of arguments: 1
                 ########
                 
+                # Free / Deallocate (Content 1) memory addresses
                 if (tape[args[0]] > self.max_memory_alloc) or (tape[args[0]] > len(self.work_tape)):
                         HALT = True
                 else:
@@ -235,31 +261,50 @@ class UniversalMachine():
         
         return HALT
     
-    def init_program_tape(self, program_tape: list):
+    def init_program_tape(self, program_tape: list) -> None:
+        """Loading program tape into internal program tape.
+        
+        program_tape -- list containing instructions
+        """
         if len(program_tape) <= (self.sp+1):
             self.program_tape = [self.correct_overflow(cell_content)for cell_content in program_tape]   # capping cell content to be in range [-maxint, maxint]
             self.Max = len(program_tape)-1
         else:
             raise Exception("Program Tape could not be loaded! Program Tape exceeds pre-allocated memory!")
 
-    def init_work_tape(self, work_tape: list):
+    def init_work_tape(self, work_tape: list) -> None:
+        """Loading work tape into internal work tape.
+        
+        work_tape -- list containg integers
+        """
         if len(work_tape) <= (self.sw+1):
             self.work_tape = [self.correct_overflow(cell_content)for cell_content in work_tape]   # capping cell content to be in range [-maxint, maxint]
             self.Min = -len(work_tape)
         else:
             raise Exception("Work Tape could not be loaded! Work Tape exceeds pre-allocated memory!")
 
-    def init_input_tape(self, input_tape: list):
+    def init_input_tape(self, input_tape: list) -> None:
+        """Loading input tape into internal input tape.
+        
+        input_tape -- list containing integers, can be considered as initial impression from environment
+        """
         self.input_tape = input_tape
 
-    def is_address_valid(self, address: int):
+    def is_address_valid(self, address: int) -> bool:
+        """Check if address is in pre-defined range, returns True if address is in range, otherwise returns False.
+        
+        address -- integer
+        """
         if (address>=self.Min) and (address<=self.Max):
             return True
         else:
             return False
         
-    def correct_overflow(self, value: int):
-        ## capping values, such they do not exceed value bounds ##
+    def correct_overflow(self, value: int) -> int:
+        """Capping values, such they do not exceed value bounds.
+
+        value -- integer
+        """
         if value < -self.maxint:
             value = -self.maxint
         elif value > self.maxint:
@@ -325,6 +370,6 @@ if __name__ == "__main__":
 ## FREE      [DONE]
 
 
-# include more comments and doc-strings []
+# include more comments and doc-strings [DONE]
 # make machine useable from command line []
 # program should be readable from files []
